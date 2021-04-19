@@ -1,0 +1,8 @@
+# battery must be in 'Always On' mode so it will recover if it looses power
+# when battery runs out of power in 'Always On' mode, Rasberry Pi stops working
+# battery must build up buffer power from solar panels to power up and restart Rasberry Pi
+# avoid the above by putting Rasberry Pi into sleep mode as often as possible
+# watch dog timer wakes up Rasberry Pi after specified time interval
+# on cloudy days: run on batteries only
+# at night: turn off Rasberry Pi
+# https://github.com/VoltaicEngineering/VoltaicArduinoSleepMode
