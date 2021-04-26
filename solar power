@@ -1,16 +1,6 @@
-# Voltaic battery must be in 'Always On' mode so it will recover if it looses power
-# when battery runs out of power in 'Always On' mode, Rasberry Pi stops working
-# battery must build up buffer power from solar panels to power up and restart Rasberry Pi
-# avoid the above by putting Rasberry Pi into sleep mode as often as possible
-# watch dog timer wakes up Rasberry Pi after specified time interval
-# on cloudy days: run on batteries only
-# at night: turn off Rasberry Pi
-
 # sleep mode
-# https://github.com/VoltaicEngineering/VoltaicArduinoSleepMode
 # http://www.gammon.com.au/forum/?id=11497
 # https://howchoo.com/pi/dont-pull-the-plug-how-to-shut-down-or-restart-your-raspberry-pi-properly
-# https://spellfoundry.com/product/sleepy-pi-2/
 
 # voltage monitor
 # https://blog.voltaicsystems.com/powering-a-raspberry-pi-from-solar-power/
@@ -20,6 +10,3 @@
 # https://www.adafruit.com/product/4755
 # https://www.adafruit.com/product/328 (any 3.7V/4.2V LiIon batteries)
 # https://voltaicsystems.com/10-watt-panel-etfe/
-
-# battery
-# https://www.amazon.com/TalentCell-Rechargeable-Lithium-Phosphate-LiFePO4/dp/B07P8LCSFJ/ref=sr_1_2?c=ts&dchild=1&keywords=6V+Batteries&qid=1618863102&refinements=p_n_feature_two_browse-bin%3A389568011&s=hpc&sr=1-2&ts_id=389575011
