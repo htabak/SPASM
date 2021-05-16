@@ -13,6 +13,7 @@ import particleFilter
 ##-----------ROBOT CLASS-----------##
 class robot:
     def __init__ (self, zeta=[0,0,0], ts=0.01, N = 10, lite=False, DRAW_SENSORS=False):
+        self.IS_LITE = lite
         self.zeta = zeta
         self.dim = [3,3]
         self.ts = ts
@@ -23,18 +24,18 @@ class robot:
                                     [1.5,-1.5],
                                     [-1.5,-1.5]]);
         self.sensors = [ultrasonic(self,0.1715,-0.1874,-np.pi/4),
-                            ultrasonic(self,-0.1715,-0.1874,-3*np.pi/4),
-                            ultrasonic(self,-0.1715,0.1874,3*np.pi/4),
-                            ultrasonic(self,0.1715,0.1874,np.pi/4)]
+                        ultrasonic(self,-0.1715,-0.1874,-3*np.pi/4),
+                        ultrasonic(self,-0.1715,0.1874,3*np.pi/4),
+                        ultrasonic(self,0.1715,0.1874,np.pi/4)]
         self.snsrData = [-1,-1,-1,-1]
         if not lite:
             self.DRAW_SENSORS = DRAW_SENSORS      
             self.cmdQueue = queue.Queue()
-            self.N = N
+            self.PF_params = [N, 1, 0]   #[NumberOfParticles, PoolScale, IndexOfBestParticle]
             self.particles = np.array([[robot(zeta=[np.random.uniform(-1.45,1.45),
                                                     np.random.uniform(-1.45,1.45),
                                                     self.zeta[2]], lite=True), 1] for i in range(N)])
-            particleFilter.update(self)
+            particleFilter.update(self)       
             self.sim = simulation(self, 80, 50)
 
     def move (self, type, vAvg, x, y):
@@ -55,7 +56,7 @@ class robot:
             self.zeta[0:2] = new_zeta[i,0:2]#trajectory.translate(new_zeta[i,0:2],cur_zeta[0:2])
             self.zeta[2] = new_zeta[i,2]
      
-            for j in range(self.N):
+            for j in range(self.PF_params[0]):
                 self.particles[j,0].zeta[0:2] = self.particles[j,0].zeta[0:2] + delta[0:2]
                 self.particles[j,0].zeta[2] = new_zeta[i,2]
 
@@ -101,7 +102,7 @@ class ultrasonic:
                 else: b = np.append(b,np.array([c[i,0:2]]),axis=0)
         b_len = np.size(b,0)
         if b_len == 0: 
-            pi4.cout(-1,"Could not read sensor data")
+            if self.rbt.IS_LITE: pi4.cout(-1,"Could not read sensor data")
             #for i in range(4): print(round(abs(np.arctan2(c[i,1]-self.snsr_zeta[1],c[i,0]-self.snsr_zeta[0])/self.snsr_zeta[2]),3))
             return -1
         elif b_len == 1:
@@ -115,7 +116,7 @@ class ultrasonic:
                 if d < min:
                     ray[1,0:2] = b[i,0:2]
                     min = d
-        if ray[1,0] < -3 or ray[1,0] > 3 or ray[1,1] < -3 or ray[1,1] > 3: 
+        if self.rbt.IS_LITE and (ray[1,0] < -3 or ray[1,0] > 3 or ray[1,1] < -3 or ray[1,1] > 3): 
             pi4.cout(-1,"Problematic sensor reading")
             #input("Press Enter to continue...")
             return -1
@@ -206,8 +207,8 @@ class simulation:
                                          cur_rbtFrame[0:5,1],
                                          'r',linewidth=3)[0]];
         #Particle Filter Graphics
-        self.PFPoints = np.array([[self.rbt.particles[i,0].zeta[0],self.rbt.particles[i,0].zeta[1]] for i in range(self.rbt.N)])
-        self.PFGrapic = [self.ax1.plot(self.PFPoints[0:self.rbt.N,0],self.PFPoints[0:self.rbt.N,1],
+        self.PFPoints = np.array([[self.rbt.particles[i,0].zeta[0],self.rbt.particles[i,0].zeta[1]] for i in range(self.rbt.PF_params[0])])
+        self.PFGrapic = [self.ax1.plot(self.PFPoints[0:self.rbt.PF_params[0],0],self.PFPoints[0:self.rbt.PF_params[0],1],
                                        'ow')[0]]
         #Pool Foreground Graphics
         self.baseFrame = np.array([[0.07,0.015],
@@ -240,7 +241,7 @@ class simulation:
             snsr_ray = np.array([trajectory.toWorldFrame(self.rbt.sensors[i].ray,self.rbt.zeta) for i in range(4)])
         cur_rbtPoints = trajectory.toWorldFrame(self.rbtPoints,self.rbt.zeta)
         cur_rbtFrame = trajectory.toWorldFrame(self.rbtFrame,self.rbt.zeta)
-        self.PFPoints = np.array([[self.rbt.particles[i,0].zeta[0],self.rbt.particles[i,0].zeta[1]] for i in range(self.rbt.N)])
+        self.PFPoints = np.array([[self.rbt.particles[i,0].zeta[0],self.rbt.particles[i,0].zeta[1]] for i in range(self.rbt.PF_params[0])])
         #Update Graphics
         if self.rbt.DRAW_SENSORS:
             for i in range(4): 
@@ -255,8 +256,8 @@ class simulation:
                                     cur_rbtFrame[4:cur_rbtFrameLen,1])
         self.rbtGraphic[3].set_data(cur_rbtFrame[0:5,0],
                                     cur_rbtFrame[0:5,1])
-        self.PFGrapic[0].set_data(self.PFPoints[0:self.rbt.N,0],
-                               self.PFPoints[0:self.rbt.N,1])
+        self.PFGrapic[0].set_data(self.PFPoints[0:self.rbt.PF_params[0],0],
+                               self.PFPoints[0:self.rbt.PF_params[0],1])
 
         return [self.rbtGraphic]
 

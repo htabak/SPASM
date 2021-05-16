@@ -1,46 +1,59 @@
 import numpy as np
-import scipy.stats
+from scipy.stats import norm
 
-global VARIANCE
-[VARIANCE] = [50]
+MIN_POOL_SCALE = 0.005
+MIN_WEIGHT = 0.1
+EXPAND_RATE = 1.05
+NARROW_RATE = 0.9
+PF_TYPE = ["SENSOR","POSITION"][0] #Pick Particle Filter Type
+
 sensorNoise = lambda: np.random.random()*(-1 if np.random.random() < 0.5 else 1)/1000
 
-# Source: http://ros-developer.com/2019/04/10/parcticle-filter-explained-with-python-code-from-scratch/
 def update(rbt):
-    global VARIANCE
-    rbt.particles[0:rbt.N,1] = np.ones((1,rbt.N))  #Reset particle weights
-    for i in range(4):
-        rbt.snsrData[i] = rbt.sensors[i].getRange()
-        for j in range(rbt.N):
-            rbt.particles[j,1] *= scipy.stats.norm(rbt.particles[j,0].sensors[i].getRange(), VARIANCE).pdf(rbt.snsrData[i])
+    global PF_TYPE
 
-    rbt.particles[0:rbt.N,1] = rbt.particles[0:rbt.N,1] + np.ones((1,rbt.N))*1.e-300  #avoid round-off to zero
+    rbt.particles[0:rbt.PF_params[0],1] = np.ones((1,rbt.PF_params[0]))  #Reset particle weights
+    maxWeight = 0
+    
+    rbt.snsrData = [rbt.sensors[0].getRange(),rbt.sensors[1].getRange(),
+                    rbt.sensors[2].getRange(),rbt.sensors[3].getRange()]
 
-    #print(np.array([[rbt.particles[i,0].zeta[0:2], rbt.particles[i,1]] for i in range(rbt.N)]))
-    rbt.particles[0:rbt.N,1] = rbt.particles[0:rbt.N,1] / sum(rbt.particles[0:rbt.N,1]) #Normalize weights
-    #print(np.array([[rbt.particles[i,0].zeta[0:2], rbt.particles[i,1]] for i in range(rbt.N)]))
-    #print()
+    if PF_TYPE == "SENSOR":
+        for i in range(rbt.PF_params[0]):
+            snsrData = [rbt.particles[i,0].sensors[0].getRange(),rbt.particles[i,0].sensors[1].getRange(),
+                        rbt.particles[i,0].sensors[2].getRange(),rbt.particles[i,0].sensors[3].getRange()]
+            rbt.particles[i,1] *= norm.pdf(snsrData[0], rbt.snsrData[0])
+            rbt.particles[i,1] *= norm.pdf(snsrData[1], rbt.snsrData[1])
+            rbt.particles[i,1] *= norm.pdf(snsrData[2], rbt.snsrData[2])
+            rbt.particles[i,1] *= norm.pdf(snsrData[3], rbt.snsrData[3])
+            if rbt.particles[i,1] > maxWeight:
+                maxWeight = rbt.particles[i,1]
+                rbt.PF_params[2] = i
+    if PF_TYPE == "POSITION":
+        for j in range(rbt.PF_params[0]):
+            rbt.particles[j,1] *= norm.pdf(rbt.particles[j,0].zeta[0], rbt.zeta[0])
+            rbt.particles[j,1] *= norm.pdf(rbt.particles[j,0].zeta[1], rbt.zeta[1])
+            if rbt.particles[j,1] > maxWeight:
+                maxWeight = rbt.particles[j,1]
+                rbt.PF_params[2] = j
+    
+    rbt.particles[0:rbt.PF_params[0],1] = rbt.particles[0:rbt.PF_params[0],1] + np.ones((1,rbt.PF_params[0]))*1.e-300  #avoid round-off to zero
+    rbt.particles[0:rbt.PF_params[0],1] = rbt.particles[0:rbt.PF_params[0],1] / sum(rbt.particles[0:rbt.PF_params[0],1]) #Normalize weights
+
 
 def resample(rbt):
-    pass
+    global MIN_POOL_SCALE, MIN_WEIGHT, EXPAND_RATE, NARROW_RATE
 
-def systematic_resample(rbt):
-    N = rbt.N
-    weights = rbt.particles[0:rbt.N,1]
-    positions = (np.arange(N) + np.random.random()) / N
+    if rbt.PF_params[1] <= 1 and rbt.particles[rbt.PF_params[2],1] <= MIN_WEIGHT:
+        rbt.PF_params[1] *= EXPAND_RATE
+    elif rbt.PF_params[1] > MIN_POOL_SCALE:
+        rbt.PF_params[1] *= NARROW_RATE
+    #print(rbt.particles[rbt.PF_params[2],1])
 
-    indexes = np.zeros(N, 'i')
-    cumulative_sum = np.cumsum(weights)
-    i, j = 0, 0
-    while i < N and j<N:
-        if positions[i] < cumulative_sum[j]:
-            indexes[i] = j
-            i += 1
-        else:
-            j += 1
-    return indexes
+    sampleOrigin = rbt.particles[rbt.PF_params[2],0].zeta[0:2]
+    xlims = [sampleOrigin[0] - 1.45*rbt.PF_params[1], sampleOrigin[0] + 1.45*rbt.PF_params[1]]
+    ylims = [sampleOrigin[1] - 1.45*rbt.PF_params[1], sampleOrigin[1] + 1.45*rbt.PF_params[1]]
 
-def resample_from_index(rbt, indexes):
-    rbt.particles[:,0] = rbt.particles[indexes,0]
-    rbt.particles[:,1] = rbt.particles[indexes,1]
-    rbt.particles[0:rbt.N,1] /= np.sum(rbt.particles[0:rbt.N,1])
+    for i in range(rbt.PF_params[0]): rbt.particles[i,0].zeta = [np.random.uniform(xlims[0],xlims[1]),
+                                                      np.random.uniform(ylims[0],ylims[1]),
+                                                      rbt.zeta[2]]

@@ -44,9 +44,7 @@ class pi4Thread (threading.Thread):
     def sensorThread(self):
         while self.rbt.sim.isOpen():
             particleFilter.update(self.rbt)
-            
-            #particleFilter.resample_from_index(self.rbt, particleFilter.systematic_resample(self.rbt))
-
+            particleFilter.resample(self.rbt)
             #pi4.cout(1,"Sensor Readings: [" + str(snsrData[0]) + ", " + str(snsrData[1]) + ", " + str(snsrData[2]) + ", " + str(snsrData[3]) + "]")
             time.sleep(self.rbt.ts)
    
