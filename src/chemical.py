@@ -9,9 +9,17 @@ class PH:
         
         recent = float(7)
         date = datetime.datetime(2021, 5, 17)
+        
+class ORP:
+    def __init__ (self):
+        cal_offset = 0.0
+        
+        recent = float(1500)
+        date = datetime.datetime(2021, 5, 17)
 
         
 pH = PH() 
+Orp = ORP()
 
 class chemicalSubsystem:
     def __init__ (self):
@@ -28,7 +36,7 @@ class chemicalSubsystem:
         }
         voltage_mV /= volt_avg_len
     
-    # convert voltage to pH value
+        # convert voltage to pH value
         if (voltage_mV > pH.mid_cal) { # high voltage = low ph
             pH.recent = 7.0 - 3.0 / (pH.low_cal - pH.mid_cal) * (voltage_mV - pH.mid_cal)
         } else {
@@ -42,7 +50,20 @@ class chemicalSubsystem:
 
     def probeORP (self):
         ORP_voltage = MCP3008(channel=1)
-        pass
+ 
+        float voltage_mV = 0
+        for (int i = 0; i < volt_avg_len; ++i) {
+            voltage_mV += MCP3008(channel=1) / 1024.0 * 5000.0
+        }
+        voltage_mV /= volt_avg_len
+        
+        # convert voltage to ORP value
+        Orp.recent = voltage_mV - 1500.0 - Orp.cal_offset; # midpoint
+        
+        # print ORP value and time
+        while True:
+            Orp.date = datetime.datetime.now()
+            print(Orp.recent, Orp.date)
 
     def moveServo (self, angle):
         pass
