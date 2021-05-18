@@ -6,7 +6,7 @@ class gateSubsystem:
         pass
 
     def open (self):
-        kit.servo[0].angle = 25
+        kit.servo[0].angle = 25 # angle assumes 0 degrees for servo is vertical
 
     def close (self):
         kit.servo[0].angle = 90
