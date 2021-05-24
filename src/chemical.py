@@ -26,10 +26,21 @@ Orp = ORP()
 
 class chemicalSubsystem:
     def __init__ (self):
-        pass
+        open = 5
 
     def setOpening (self, pos):
-        pass
+        if pos == 5:
+            moveServo(60)
+        elif pos == 4:
+            moveServo(65)
+        elif pos == 3:
+            moveServo(90)
+        elif pos == 2:
+            moveServo(118)
+        elif pos == 1:
+            moveServo(145)
+        else pos == 0:
+            moveServo(170)
 
     def probePH (self):
         pH_voltage = MCP3008(channel=0)
@@ -40,9 +51,9 @@ class chemicalSubsystem:
         voltage_mV /= volt_avg_len
     
         # convert voltage to pH value
-        if (voltage_mV > pH.mid_cal) # high voltage = low ph
+        if voltage_mV > pH.mid_cal: # high voltage = low ph
             pH.recent = 7.0 - 3.0 / (pH.low_cal - pH.mid_cal) * (voltage_mV - pH.mid_cal)
-        else
+        else:
             pH.recent = 7.0 - 3.0 / (pH.mid_cal - pH.high_cal) * (voltage_mV - pH.mid_cal)
         
         # print pH value and time
