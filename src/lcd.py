@@ -1,29 +1,47 @@
 # SPDX-FileCopyrightText: 2021 ladyada for Adafruit Industries
 # SPDX-License-Identifier: MIT
 
-"""Simple test for monochromatic character LCD on Raspberry Pi"""
+"""Simple test for keypad on I2C RGB character LCD Shield or Pi Plate kits"""
 import time
 import board
-import digitalio
-import adafruit_character_lcd.character_lcd as characterlcd
+import adafruit_character_lcd.character_lcd_rgb_i2c as character_lcd
 
-# Modify this if you have a different sized character LCD
+# Modify this if you have a different sized Character LCD
 lcd_columns = 16
 lcd_rows = 2
 
-# Raspberry Pi Pin Config:
-lcd_rs = digitalio.DigitalInOut(board.D26)
-lcd_en = digitalio.DigitalInOut(board.D19)
-lcd_d7 = digitalio.DigitalInOut(board.D27)
-lcd_d6 = digitalio.DigitalInOut(board.D22)
-lcd_d5 = digitalio.DigitalInOut(board.D24)
-lcd_d4 = digitalio.DigitalInOut(board.D25)
-lcd_backlight = digitalio.DigitalInOut(board.D4)
+# Initialise I2C bus.
+i2c = board.I2C()  # uses board.SCL and board.SDA
 
-# Initialise the lcd class
-lcd = characterlcd.Character_LCD_Mono(
-    lcd_rs, lcd_en, lcd_d4, lcd_d5, lcd_d6, lcd_d7, lcd_columns, lcd_rows, lcd_backlight
-)
+# Initialise the LCD class
+lcd = character_lcd.Character_LCD_RGB_I2C(i2c, lcd_columns, lcd_rows)
+
+lcd.clear()
+lcd.color = [100, 0, 0]
+while True:
+    if lcd.left_button:
+        print("Left!")
+        lcd.message = "Left!"
+
+    elif lcd.up_button:
+        print("Up!")
+        lcd.message = "Up!"
+
+    elif lcd.down_button:
+        print("Down!")
+        lcd.message = "Down!"
+
+    elif lcd.right_button:
+        print("Right!")
+        lcd.message = "Right!"
+
+    elif lcd.select_button:
+        print("Select!")
+        lcd.message = "Select!"
+
+    else:
+        time.sleep(0.1)
+        lcd.clear()
 
 # Turn backlight on
 lcd.backlight = True
