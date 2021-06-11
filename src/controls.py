@@ -6,8 +6,8 @@ from matplotlib.animation import FuncAnimation
 
 import pi4
 import trajectory
-import gate
-import chemical
+#import gate
+#import chemical
 import particleFilter
 
 ##-----------ROBOT CLASS-----------##
@@ -63,11 +63,9 @@ class robot:
             time.sleep(self.ts)
             if not self.sim.isOpen(): break
 
-    def localize (self):
-        pass
-
-    def getDistances (self):
-        pass
+    def updateDistances (self):
+        self.snsrData = [self.sensors[0].getRange(),self.sensors[1].getRange(),
+                         self.sensors[2].getRange(),self.sensors[3].getRange()]
 
     def reset (self):
         pass
@@ -102,7 +100,7 @@ class ultrasonic:
                 else: b = np.append(b,np.array([c[i,0:2]]),axis=0)
         b_len = np.size(b,0)
         if b_len == 0: 
-            if self.rbt.IS_LITE: pi4.cout(-1,"Could not read sensor data")
+            #if not self.rbt.IS_LITE: pi4.cout(-1,"Could not read sensor data")
             #for i in range(4): print(round(abs(np.arctan2(c[i,1]-self.snsr_zeta[1],c[i,0]-self.snsr_zeta[0])/self.snsr_zeta[2]),3))
             return -1
         elif b_len == 1:
@@ -116,7 +114,7 @@ class ultrasonic:
                 if d < min:
                     ray[1,0:2] = b[i,0:2]
                     min = d
-        if self.rbt.IS_LITE and (ray[1,0] < -3 or ray[1,0] > 3 or ray[1,1] < -3 or ray[1,1] > 3): 
+        if not self.rbt.IS_LITE and (ray[1,0] < -3 or ray[1,0] > 3 or ray[1,1] < -3 or ray[1,1] > 3): 
             pi4.cout(-1,"Problematic sensor reading")
             #input("Press Enter to continue...")
             return -1

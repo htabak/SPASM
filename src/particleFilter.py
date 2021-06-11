@@ -2,9 +2,9 @@ import numpy as np
 from scipy.stats import norm
 
 MIN_POOL_SCALE = 0.005
-MIN_WEIGHT = 0.1
+MIN_WEIGHT = 0.5
 EXPAND_RATE = 1.05
-NARROW_RATE = 0.9
+NARROW_RATE = 0.8
 PF_TYPE = ["SENSOR","POSITION"][0] #Pick Particle Filter Type
 
 sensorNoise = lambda: np.random.random()*(-1 if np.random.random() < 0.5 else 1)/1000
@@ -14,18 +14,25 @@ def update(rbt):
 
     rbt.particles[0:rbt.PF_params[0],1] = np.ones((1,rbt.PF_params[0]))  #Reset particle weights
     maxWeight = 0
-    
-    rbt.snsrData = [rbt.sensors[0].getRange(),rbt.sensors[1].getRange(),
-                    rbt.sensors[2].getRange(),rbt.sensors[3].getRange()]
-
+   
+    rbt.updateDistances()
     if PF_TYPE == "SENSOR":
         for i in range(rbt.PF_params[0]):
             snsrData = [rbt.particles[i,0].sensors[0].getRange(),rbt.particles[i,0].sensors[1].getRange(),
                         rbt.particles[i,0].sensors[2].getRange(),rbt.particles[i,0].sensors[3].getRange()]
-            rbt.particles[i,1] *= norm.pdf(snsrData[0], rbt.snsrData[0])
-            rbt.particles[i,1] *= norm.pdf(snsrData[1], rbt.snsrData[1])
-            rbt.particles[i,1] *= norm.pdf(snsrData[2], rbt.snsrData[2])
-            rbt.particles[i,1] *= norm.pdf(snsrData[3], rbt.snsrData[3])
+            if -1 in snsrData: rbt.particles[i,1] == 0
+            if rbt.particles[i,0].zeta[0] < -1.5 or rbt.particles[i,0].zeta[0] > 1.5 \
+               or rbt.particles[i,0].zeta[1] < -1.5 or rbt.particles[i,0].zeta[1] > 1.5:
+                rbt.particles[i,1] = 0
+                continue
+            if rbt.snsrData[0] != -1:
+                rbt.particles[i,1] *= norm.pdf(snsrData[0], rbt.snsrData[0], 0.3989)
+            if rbt.snsrData[1] != -1:
+                rbt.particles[i,1] *= norm.pdf(snsrData[1], rbt.snsrData[1], 0.3989)
+            if rbt.snsrData[2] != -1:
+                rbt.particles[i,1] *= norm.pdf(snsrData[2], rbt.snsrData[2], 0.3989)
+            if rbt.snsrData[3] != -1:
+                rbt.particles[i,1] *= norm.pdf(snsrData[3], rbt.snsrData[3], 0.3989)
             if rbt.particles[i,1] > maxWeight:
                 maxWeight = rbt.particles[i,1]
                 rbt.PF_params[2] = i
@@ -38,16 +45,16 @@ def update(rbt):
                 rbt.PF_params[2] = j
     
     rbt.particles[0:rbt.PF_params[0],1] = rbt.particles[0:rbt.PF_params[0],1] + np.ones((1,rbt.PF_params[0]))*1.e-300  #avoid round-off to zero
-    rbt.particles[0:rbt.PF_params[0],1] = rbt.particles[0:rbt.PF_params[0],1] / sum(rbt.particles[0:rbt.PF_params[0],1]) #Normalize weights
+    #rbt.particles[0:rbt.PF_params[0],1] = rbt.particles[0:rbt.PF_params[0],1] / sum(rbt.particles[0:rbt.PF_params[0],1]) #Normalize weights
 
 
 def resample(rbt):
     global MIN_POOL_SCALE, MIN_WEIGHT, EXPAND_RATE, NARROW_RATE
 
-    if rbt.PF_params[1] <= 1 and rbt.particles[rbt.PF_params[2],1] <= MIN_WEIGHT:
-        rbt.PF_params[1] *= EXPAND_RATE
-    elif rbt.PF_params[1] > MIN_POOL_SCALE:
+    if rbt.particles[rbt.PF_params[2],1] >= MIN_WEIGHT and rbt.PF_params[1] > MIN_POOL_SCALE:
         rbt.PF_params[1] *= NARROW_RATE
+    elif rbt.PF_params[1] <= 1:
+        rbt.PF_params[1] *= EXPAND_RATE
     #print(rbt.particles[rbt.PF_params[2],1])
 
     sampleOrigin = rbt.particles[rbt.PF_params[2],0].zeta[0:2]
