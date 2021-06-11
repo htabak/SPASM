@@ -1,5 +1,8 @@
 from gpiozero import MCP3008
 import datetime
+from adafruit_servokit import ServoKit
+
+kit = ServoKit(channels=16)
 
 class PH:
     def __init__ (self):
@@ -23,25 +26,35 @@ Orp = ORP()
 
 class chemicalSubsystem:
     def __init__ (self):
-        pass
+        open = 5
 
     def setOpening (self, pos):
-        pass
+        if pos == 5:
+            moveServo(60)
+        elif pos == 4:
+            moveServo(65)
+        elif pos == 3:
+            moveServo(90)
+        elif pos == 2:
+            moveServo(118)
+        elif pos == 1:
+            moveServo(145)
+        else pos == 0:
+            moveServo(170)
 
     def probePH (self):
         pH_voltage = MCP3008(channel=0)
         float voltage_mV = 0
-        for (int i = 0; i < volt_avg_len; ++i) {
+        for x in range(0,volt_avg_len):
             voltage_mV += MCP3008(channel=0) / 1024.0 * 5000.0
-        }
+       
         voltage_mV /= volt_avg_len
     
         # convert voltage to pH value
-        if (voltage_mV > pH.mid_cal) { # high voltage = low ph
+        if voltage_mV > pH.mid_cal: # high voltage = low ph
             pH.recent = 7.0 - 3.0 / (pH.low_cal - pH.mid_cal) * (voltage_mV - pH.mid_cal)
-        } else {
+        else:
             pH.recent = 7.0 - 3.0 / (pH.mid_cal - pH.high_cal) * (voltage_mV - pH.mid_cal)
-        }
         
         # print pH value and time
         while True:
@@ -52,9 +65,9 @@ class chemicalSubsystem:
         ORP_voltage = MCP3008(channel=1)
  
         float voltage_mV = 0
-        for (int i = 0; i < volt_avg_len; ++i) {
+        for x in range(0,volt_avg_len):
             voltage_mV += MCP3008(channel=1) / 1024.0 * 5000.0
-        }
+       
         voltage_mV /= volt_avg_len
         
         # convert voltage to ORP value
@@ -66,6 +79,6 @@ class chemicalSubsystem:
             print(Orp.recent, Orp.date)
 
     def moveServo (self, angle):
-        pass
+        kit.servo[1].angle = angle
 
     
